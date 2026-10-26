@@ -30,7 +30,7 @@ fun buscarPorId(lista: List<Videojuego>, id: Int) {
     }
 }
 
-fun anadirVideojuego(lista: MutableList<Videojuego>) {
+fun añadirVideojuego(lista: MutableList<Videojuego>) {
     print("Introduce el título: ")
     val titulo = readlnOrNull()?.trim() ?: return
 
@@ -75,7 +75,11 @@ fun anadirVideojuego(lista: MutableList<Videojuego>) {
     println("Videojuego añadido con ID: $id")
 }
 
-fun modificarNota(lista: List<Videojuego>, id: Int, nuevaNota: Double): MutableList<Videojuego> {
+fun modificarNota(
+    lista: List<Videojuego>,
+    id: Int,
+    nuevaNota: Double
+): MutableList<Videojuego> {
 
     // Comprobamos que la nota esté dentro del rango permitido
     if (nuevaNota < 0.0 || nuevaNota > 10.0) {
@@ -103,7 +107,10 @@ fun modificarNota(lista: List<Videojuego>, id: Int, nuevaNota: Double): MutableL
     }.toMutableList()
 }
 
-fun eliminarVideojuego(lista: List<Videojuego>, id: Int): MutableList<Videojuego> {
+fun eliminarVideojuego(
+    lista: List<Videojuego>,
+    id: Int
+): MutableList<Videojuego> {
 
     // Buscamos el videojuego que queremos eliminar
     val videojuego = lista.find { it.id == id }
@@ -125,4 +132,22 @@ fun eliminarVideojuego(lista: List<Videojuego>, id: Int): MutableList<Videojuego
 
     println("Eliminación cancelada.")
     return lista.toMutableList()
+}
+
+fun integrarCatalogo(
+    catalogo: MutableList<Videojuego>,
+    importados: List<Videojuego>
+): Int {
+
+    // Guardamos los ID que ya existen en el catálogo
+    val idsExistentes = catalogo.map { it.id }.toSet()
+
+    // Nos quedamos solo con los videojuegos cuyo ID todavía no existe
+    val nuevos = importados
+        .filter { it.id !in idsExistentes }
+        .distinctBy { it.id }
+
+    // Añadimos los nuevos al catálogo y devolvemos cuántos son
+    catalogo.addAll(nuevos)
+    return nuevos.size
 }

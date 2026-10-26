@@ -15,6 +15,12 @@ fun main() {
     val rutaEntrada = rutaDatosIni.resolve("videojuegos.csv")
     val rutaSalida = rutaDatosFin.resolve("videojuegos.csv")
 
+    // Ruta del fichero XML desde el que se puede importar el catálogo
+    val rutaXML = rutaDatosIni.resolve("videojuegos.xml")
+
+    // Ruta del fichero JSON desde el que se puede importar el catálogo
+    val rutaJSON = rutaDatosIni.resolve("videojuegos.json")
+
     try {
 
         // Creamos la carpeta de datos iniciales si no existe
@@ -75,6 +81,8 @@ fun main() {
         println()
         println("===== CATÁLOGO DE VIDEOJUEGOS =====")
         println("1. Gestión CSV")
+        println("2. Leer catálogo desde XML")
+        println("3. Leer catálogo desde JSON")
         println("0. Salir")
         println("====================================")
         print("Elige una opción: ")
@@ -118,7 +126,7 @@ fun main() {
                             // Guardamos el tamaño para detectar si se ha añadido un videojuego
                             val cantidadAnterior = videojuegos.size
 
-                            anadirVideojuego(videojuegos)
+                            añadirVideojuego(videojuegos)
 
                             // Solo guardamos si la lista ha cambiado
                             if (videojuegos.size > cantidadAnterior) {
@@ -178,6 +186,48 @@ fun main() {
 
                         // Avisamos si se introduce una opción que no existe
                         else -> println("Opción no válida.")
+                    }
+                }
+            }
+
+            // Leemos los videojuegos del XML y los integramos en el catálogo
+            2 -> {
+                val importados = leerVideojuegosXML(rutaXML)
+
+                if (importados.isEmpty()) {
+                    println("No se han leído videojuegos del fichero XML.")
+                } else {
+                    // Mostramos los videojuegos leídos del XML
+                    listarVideojuegos(importados)
+
+                    // Añadimos solo los que no existen ya en el catálogo (por ID)
+                    val nuevos = integrarCatalogo(videojuegos, importados)
+                    println("Videojuegos nuevos integrados: $nuevos")
+
+                    // Guardamos solo si se ha integrado algún videojuego
+                    if (nuevos > 0) {
+                        guardarCSV(rutaSalida, videojuegos)
+                    }
+                }
+            }
+
+            // Leemos los videojuegos del JSON y los integramos en el catálogo
+            3 -> {
+                val importados = leerVideojuegosJSON(rutaJSON)
+
+                if (importados.isEmpty()) {
+                    println("No se han leído videojuegos del fichero JSON.")
+                } else {
+                    // Mostramos los videojuegos leídos del JSON
+                    listarVideojuegos(importados)
+
+                    // Añadimos solo los que no existen ya en el catálogo (por ID)
+                    val nuevos = integrarCatalogo(videojuegos, importados)
+                    println("Videojuegos nuevos integrados: $nuevos")
+
+                    // Guardamos solo si se ha integrado algún videojuego
+                    if (nuevos > 0) {
+                        guardarCSV(rutaSalida, videojuegos)
                     }
                 }
             }

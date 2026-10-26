@@ -83,6 +83,8 @@ fun main() {
         println("1. Gestión CSV")
         println("2. Leer catálogo desde XML")
         println("3. Leer catálogo desde JSON")
+        println("4. Conversiones entre formatos")
+        println("5. Gestión fichero BIN")
         println("0. Salir")
         println("====================================")
         print("Elige una opción: ")
@@ -231,6 +233,12 @@ fun main() {
                     }
                 }
             }
+
+            // Abrimos el submenú de conversiones entre formatos
+            4 -> menuConversiones(rutaDatosIni, rutaDatosFin)
+
+            // Abrimos el submenú de gestión del fichero binario (se importa desde el CSV inicial)
+            5 -> menuBIN(rutaEntrada)
 
             // Cerramos el programa cuando el usuario elige 0
             0 -> {

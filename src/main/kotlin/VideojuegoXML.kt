@@ -34,3 +34,15 @@ fun leerVideojuegosXML(ruta: Path): List<Videojuego> {
     }
     return contenedor.listaVideojuegos
 }
+
+fun escribirVideojuegosXML(ruta: Path, videojuegos: List<Videojuego>) {
+    // Creamos las carpetas necesarias si todavía no existen
+    Files.createDirectories(ruta.parent)
+
+    val contenedor = VideojuegosXML(videojuegos)
+    val xmlMapper = XmlMapper().registerKotlinModule()
+
+    // Generamos el XML formateado con saltos de línea y tabuladores para que sea legible
+    val xmlString = xmlMapper.writerWithDefaultPrettyPrinter().writeValueAsString(contenedor)
+    ruta.toFile().writeText(xmlString)
+}

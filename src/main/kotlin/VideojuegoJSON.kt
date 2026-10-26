@@ -1,6 +1,7 @@
 import java.nio.file.Files
 import java.nio.file.Path
 
+import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 
 fun leerVideojuegosJSON(ruta: Path): List<Videojuego> {
@@ -21,4 +22,15 @@ fun leerVideojuegosJSON(ruta: Path): List<Videojuego> {
         }
     }
     return videojuegos
+}
+
+fun escribirVideojuegosJSON(ruta: Path, videojuegos: List<Videojuego>) {
+    // Creamos las carpetas necesarias si todavía no existen
+    Files.createDirectories(ruta.parent)
+
+    // Configuramos el formateador con la opción 'prettyPrint' activa
+    val jsonConfigurador = Json { prettyPrint = true }
+    val jsonString = jsonConfigurador.encodeToString(videojuegos)
+
+    Files.writeString(ruta, jsonString)
 }

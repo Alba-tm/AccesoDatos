@@ -124,7 +124,7 @@ fun main() {
                             // Guardamos el tamaño para detectar si se ha añadido un videojuego
                             val cantidadAnterior = videojuegos.size
 
-                            añadirVideojuego(videojuegos)
+                            anadirVideojuego(videojuegos)
 
                             // Solo guardamos si la lista ha cambiado
                             if (videojuegos.size > cantidadAnterior) {

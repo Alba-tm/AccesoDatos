@@ -35,7 +35,7 @@ fun menuBIN(rutaImportacion: Path) {
 
             1 -> importarABIN(rutaImportacion)
             2 -> mostrarRegistrosBIN()
-            3 -> añadirRegistroBIN()
+            3 -> anadirRegistroBIN()
             4 -> modificarRegistroBIN()
             5 -> eliminarRegistroBIN()
 
@@ -182,7 +182,7 @@ fun mostrarRegistrosBIN() {
     }
 }
 
-fun añadirRegistroBIN() {
+fun anadirRegistroBIN() {
     try {
         // Pedimos el ID hasta que sea un número que no exista ya en el fichero
         var id = pedirEntero("Introduce el ID: ")

@@ -60,12 +60,12 @@ Los textos se rellenan con espacios hasta completar su tamaño y se guardan con 
 
 ## 2. Instrucciones de ejecución
 
-- **Requisitos previos**: JDK 24.
+- **Requisitos previos**: JDK 24 instalado (el proyecto se ha desarrollado con esta versión).
 - **Compilación**: abre el proyecto en IntelliJ IDEA y deja que Gradle sincronice las dependencias. En `build.gradle.kts` deben estar el plugin y las dependencias siguientes:
 
 ```kotlin
 plugins {
-    kotlin("plugin.serialization") version "1.9.0" // misma versión que el plugin de Kotlin del proyecto
+    kotlin("plugin.serialization") version "1.9.0"
 }
 
 dependencies {
@@ -92,13 +92,13 @@ dependencies {
 ## 3. Decisiones de diseño
 
 - Elegí `;` como separador del CSV y no usé cabecera, porque así lo exigen los datos de partida y evita tener que descartar la primera línea al leer.
-- Separé `datos_ini` (datos originales) de `datos_fin` (datos modificados) para no perder nunca el fichero de partida. Al arrancar, el programa carga `datos_fin/videojuegos.csv` si ya existe, para conservar los cambios de ejecuciones anteriores, y si no, carga `datos_ini`.
-- Las conversiones y la importación al binario leen siempre de `datos_ini`. Las conversiones a CSV escriben en `datos_fin/videojuegos.csv`, el mismo fichero donde se guarda el catálogo, así que sobrescriben los cambios guardados.
+- Separé `datos_ini` (datos originales) de `datos_fin` (datos modificados) para no perder nunca el fichero de partida. El programa siempre lee `datos_ini/videojuegos.csv` al arrancar y guarda los cambios en `datos_fin/videojuegos.csv`.
+- Las conversiones y la importación al binario leen siempre de `datos_ini`. Las conversiones a CSV escriben en `datos_fin/videojuegos.csv`, el mismo fichero donde se guarda el catálogo, así que lo sobrescriben.
 - La data class `Videojuego` se reutiliza para CSV, XML, JSON y binario. Sus propiedades se llaman igual que las etiquetas y claves de los ficheros, por lo que no hacen falta anotaciones `@SerialName` ni `@JacksonXmlProperty` en ella.
 - La integración de XML y JSON evita duplicados comparando los ID con los que ya existen en el catálogo, y la función `integrarCatalogo` devuelve cuántos videojuegos nuevos se han añadido.
 - Todas las conversiones usan una única función genérica, `convertir(origen, destino, leer, escribir)`. Los objetos `Videojuego` en memoria hacen de paso intermedio entre cualquier formato de origen y de destino.
 - Reservé 40 bytes para el título porque el más largo del catálogo, "The Legend of Zelda: Breath of the Wild", tiene 39 caracteres. Reservé 20 bytes para el género porque el más largo ("Plataformas") tiene 11 caracteres y quedan márgenes para géneros futuros.
-- Usé `ISO_8859_1` para que 1 carácter ocupe siempre 1 byte (también las tildes y las eñes) y que el tamaño del registro sea siempre de 76 bytes. Por eso, al añadir un videojuego, se rechazan los títulos o géneros demasiado largos o con caracteres que esa codificación no admite.
-- Al modificar un registro binario salto directamente al campo `nota` con `FileChannel.position()`, sin leer ni reescribir el resto del fichero.
+- Usé `ISO_8859_1` para que 1 carácter ocupe siempre 1 byte (también las tildes y las eñes) y que el tamaño del registro sea siempre de 76 bytes. Por eso, al añadir un videojuego, se rechazan los títulos o géneros vacíos o más largos que el tamaño reservado.
+- Al modificar un registro binario calculo su posición (lugar en el fichero × 76 bytes) y salto directamente al campo `nota` con `FileChannel.position()`, sin reescribir el resto del fichero.
 - Para eliminar un registro copio todos los demás a un fichero temporal `.tmp` y después lo muevo sobre el original, porque borrar un registro de en medio obligaría a desplazar todos los bytes siguientes.
-- Todas las entradas por teclado se validan: el ID debe ser un número entero, la nota debe estar entre 0.0 y 10.0 (se admite la coma decimal) y las opciones de menú no válidas se avisan sin cerrar el programa.
+- Todas las entradas por teclado se validan: el ID debe ser un número entero, la nota debe estar entre 0.0 y 10.0 y las opciones de menú no válidas se avisan sin cerrar el programa.

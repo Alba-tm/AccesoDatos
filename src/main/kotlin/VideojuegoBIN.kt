@@ -182,7 +182,7 @@ fun mostrarRegistrosBIN() {
     }
 }
 
-fun añadirRegistroBIN() {
+fun anadirRegistroBIN() {
     try {
         // Pedimos el ID hasta que sea un número que no exista ya en el fichero
         var id = pedirEntero("Introduce el ID: ")

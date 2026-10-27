@@ -30,7 +30,7 @@ fun buscarPorId(lista: List<Videojuego>, id: Int) {
     }
 }
 
-fun añadirVideojuego(lista: MutableList<Videojuego>) {
+fun anadirVideojuego(lista: MutableList<Videojuego>) {
     print("Introduce el título: ")
     val titulo = readlnOrNull()?.trim() ?: return
 

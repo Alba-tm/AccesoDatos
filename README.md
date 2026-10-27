@@ -21,7 +21,7 @@ data class Videojuego(
 ### Estructura del proyecto
 
 ```
-src/
+src/main/kotlin/
 ├── Main.kt                    ← menús principales y submenú CSV
 ├── Videojuego.kt              ← data class
 ├── VideojuegoRepository.kt    ← leer y guardar el CSV
@@ -60,7 +60,7 @@ Los textos se rellenan con espacios hasta completar su tamaño y se guardan con 
 
 ## 2. Instrucciones de ejecución
 
-- **Requisitos previos**: JDK 24 instalado (el proyecto se ha desarrollado con esta versión).
+- **Requisitos previos**: JDK 25 instalado (el proyecto se ha desarrollado con esta versión).
 - **Compilación**: abre el proyecto en IntelliJ IDEA y deja que Gradle sincronice las dependencias. En `build.gradle.kts` deben estar el plugin y las dependencias siguientes:
 
 ```kotlin

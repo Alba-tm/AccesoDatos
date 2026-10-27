@@ -74,11 +74,7 @@ fun anadirVideojuego(lista: MutableList<Videojuego>) {
     println("Videojuego añadido con ID: $id")
 }
 
-fun modificarNota(
-    lista: List<Videojuego>,
-    id: Int,
-    nuevaNota: Double
-): MutableList<Videojuego> {
+fun modificarNota(lista: List<Videojuego>,id: Int, nuevaNota: Double): MutableList<Videojuego> {
 
     // Comprobamos que la nota esté dentro del rango permitido
     if (nuevaNota < 0.0 || nuevaNota > 10.0) {
@@ -106,10 +102,7 @@ fun modificarNota(
     }.toMutableList()
 }
 
-fun eliminarVideojuego(
-    lista: List<Videojuego>,
-    id: Int
-): MutableList<Videojuego> {
+fun eliminarVideojuego(lista: List<Videojuego>, id: Int): MutableList<Videojuego> {
 
     // Buscamos el videojuego que queremos eliminar
     val videojuego = lista.find { it.id == id }
@@ -133,10 +126,7 @@ fun eliminarVideojuego(
     return lista.toMutableList()
 }
 
-fun integrarCatalogo(
-    catalogo: MutableList<Videojuego>,
-    importados: List<Videojuego>
-): Int {
+fun integrarCatalogo(catalogo: MutableList<Videojuego>,importados: List<Videojuego>): Int {
     var nuevos = 0
 
     for (videojuego in importados) {

@@ -62,19 +62,15 @@ fun main() {
         return
     }
 
-    // Elegimos el fichero a leer: el de datos_fin si ya existe, si no el de datos_ini
-    val rutaLectura = when {
-        Files.exists(rutaSalida) -> rutaSalida
-        Files.exists(rutaEntrada) -> rutaEntrada
-        else -> {
-            println("Error: no existe el fichero inicial: $rutaEntrada")
-            println("Coloca videojuegos.csv dentro de la carpeta datos_ini.")
-            return
-        }
+    // Comprobamos que el fichero CSV inicial existe antes de leerlo
+    if (Files.notExists(rutaEntrada)) {
+        println("Error: no existe el fichero inicial: $rutaEntrada")
+        println("Coloca videojuegos.csv dentro de la carpeta datos_ini.")
+        return
     }
 
-    // Leemos los videojuegos del fichero CSV
-    var videojuegos = leerDatosCSV(rutaLectura)
+    // Leemos los videojuegos del fichero CSV inicial
+    var videojuegos = leerDatosCSV(rutaEntrada)
 
     // Menú principal: se repite hasta que el usuario elija salir
     while (true) {
@@ -145,8 +141,7 @@ fun main() {
                                 println("El ID debe ser un número entero.")
                             } else {
                                 print("Introduce la nueva nota: ")
-                                // Cambiamos la coma por un punto para aceptar notas como 8,5
-                                val nota = readlnOrNull()?.replace(',', '.')?.toDoubleOrNull()
+                                val nota = readlnOrNull()?.toDoubleOrNull()
 
                                 if (nota == null) {
                                     println("La nota debe ser un número válido.")
@@ -206,10 +201,8 @@ fun main() {
                     val nuevos = integrarCatalogo(videojuegos, importados)
                     println("Videojuegos nuevos integrados: $nuevos")
 
-                    // Guardamos solo si se ha integrado algún videojuego
-                    if (nuevos > 0) {
-                        guardarCSV(rutaSalida, videojuegos)
-                    }
+                    // Guardamos el catálogo actualizado en el CSV
+                    guardarCSV(rutaSalida, videojuegos)
                 }
             }
 
@@ -227,10 +220,8 @@ fun main() {
                     val nuevos = integrarCatalogo(videojuegos, importados)
                     println("Videojuegos nuevos integrados: $nuevos")
 
-                    // Guardamos solo si se ha integrado algún videojuego
-                    if (nuevos > 0) {
-                        guardarCSV(rutaSalida, videojuegos)
-                    }
+                    // Guardamos el catálogo actualizado en el CSV
+                    guardarCSV(rutaSalida, videojuegos)
                 }
             }
 

@@ -48,52 +48,24 @@ fun menuBIN(rutaImportacion: Path) {
     }
 }
 
-// Convierte un texto en un array de bytes de longitud fija (ISO_8859_1, relleno con espacios)
-fun textoABytes(texto: String, tamano: Int): ByteArray {
-    val bytes = ByteArray(tamano) { ' '.code.toByte() }
-    val original = texto.toByteArray(Charsets.ISO_8859_1)
-    original.copyInto(bytes, 0, 0, minOf(original.size, tamano))
-    return bytes
-}
-
-// Comprueba que el texto cabe en los bytes reservados y que se puede guardar en ISO_8859_1
-fun textoValido(texto: String, tamano: Int): Boolean {
-    val bytes = texto.toByteArray(Charsets.ISO_8859_1)
-    return bytes.size <= tamano && String(bytes, Charsets.ISO_8859_1) == texto
-}
-
-// Prepara un buffer con los 76 bytes de un registro, listo para escribirlo en el canal
-fun registroABuffer(videojuego: Videojuego): ByteBuffer {
+// Escribe un registro de 76 bytes en la posición actual del canal
+fun escribirRegistro(canal: FileChannel, videojuego: Videojuego) {
     val buffer = ByteBuffer.allocate(TAMANO_REGISTRO)
 
     buffer.putInt(videojuego.id)
-    buffer.put(textoABytes(videojuego.titulo, TAMANO_TITULO))
-    buffer.put(textoABytes(videojuego.genero, TAMANO_GENERO))
+
+    // Los textos se rellenan con espacios hasta completar su tamaño fijo
+    buffer.put(videojuego.titulo.padEnd(TAMANO_TITULO, ' ').toByteArray(Charsets.ISO_8859_1), 0, TAMANO_TITULO)
+    buffer.put(videojuego.genero.padEnd(TAMANO_GENERO, ' ').toByteArray(Charsets.ISO_8859_1), 0, TAMANO_GENERO)
+
     buffer.putInt(videojuego.anio)
     buffer.putDouble(videojuego.nota)
 
     // Preparamos el buffer para volcar la información al canal
     buffer.flip()
-    return buffer
-}
-
-// Reconstruye un videojuego a partir de un buffer con un registro leído
-fun bufferARegistro(buffer: ByteBuffer): Videojuego {
-    val id = buffer.getInt()
-
-    // Leemos los bytes de los textos y los decodificamos limpiando los espacios sobrantes
-    val tituloBytes = ByteArray(TAMANO_TITULO)
-    buffer.get(tituloBytes)
-    val titulo = String(tituloBytes, Charsets.ISO_8859_1).trim()
-
-    val generoBytes = ByteArray(TAMANO_GENERO)
-    buffer.get(generoBytes)
-    val genero = String(generoBytes, Charsets.ISO_8859_1).trim()
-
-    val anio = buffer.getInt()
-    val nota = buffer.getDouble()
-
-    return Videojuego(id, titulo, genero, anio, nota)
+    while (buffer.hasRemaining()) {
+        canal.write(buffer)
+    }
 }
 
 // Lee todos los registros de manera secuencial de inicio a fin
@@ -108,100 +80,49 @@ fun leerRegistrosBIN(): List<Videojuego> {
         // Cada lectura llena exactamente un registro de 76 bytes
         while (canal.read(buffer) > 0) {
             buffer.flip()
-            videojuegos.add(bufferARegistro(buffer))
+
+            val id = buffer.getInt()
+
+            // Leemos los bytes de los textos y los decodificamos limpiando los espacios sobrantes
+            val tituloBytes = ByteArray(TAMANO_TITULO)
+            buffer.get(tituloBytes)
+            val titulo = String(tituloBytes, Charsets.ISO_8859_1).trim()
+
+            val generoBytes = ByteArray(TAMANO_GENERO)
+            buffer.get(generoBytes)
+            val genero = String(generoBytes, Charsets.ISO_8859_1).trim()
+
+            val anio = buffer.getInt()
+            val nota = buffer.getDouble()
+
+            videojuegos.add(Videojuego(id, titulo, genero, anio, nota))
             buffer.clear()
         }
     }
     return videojuegos
 }
 
-// Recorre el fichero y devuelve la posición (en bytes) donde empieza el registro con ese ID, o -1 si no existe
-fun buscarPosicionBIN(id: Int): Long {
-    var posicion = -1L
-
-    if (!Files.isReadable(rutaBIN)) return posicion
-
-    FileChannel.open(rutaBIN, StandardOpenOption.READ).use { canal ->
-        val buffer = ByteBuffer.allocate(TAMANO_REGISTRO)
-
-        while (posicion == -1L && canal.read(buffer) > 0) {
-            // Al terminar de leer un registro, el puntero está al final de este
-            val inicioRegistro = canal.position() - TAMANO_REGISTRO
-            buffer.flip()
-
-            if (buffer.getInt() == id) {
-                posicion = inicioRegistro
-            }
-            buffer.clear()
-        }
-    }
-    return posicion
-}
-
-// Lee el registro que empieza en una posición concreta del fichero
-fun leerRegistroEn(posicion: Long): Videojuego {
-    return FileChannel.open(rutaBIN, StandardOpenOption.READ).use { canal ->
-        // Saltamos directamente a la posición del registro
-        canal.position(posicion)
-
-        val buffer = ByteBuffer.allocate(TAMANO_REGISTRO)
-        canal.read(buffer)
-        buffer.flip()
-
-        bufferARegistro(buffer)
-    }
-}
-
-// Pide un ID hasta que sea un número entero
-fun pedirId(): Int {
+// Pide un número entero hasta que se introduzca uno válido
+fun pedirEntero(mensaje: String): Int {
     while (true) {
-        print("Introduce el ID: ")
-        val id = readlnOrNull()?.toIntOrNull()
+        print(mensaje)
+        val numero = readlnOrNull()?.toIntOrNull()
 
-        if (id != null) return id
+        if (numero != null) return numero
 
-        println("El ID debe ser un número entero.")
+        println("Debe ser un número entero.")
     }
 }
 
-// Pide un ID hasta que sea un número entero que no exista ya en el fichero binario
-fun pedirIdNuevo(): Int {
+// Pide un texto hasta que no esté vacío y quepa en el tamaño reservado
+fun pedirTexto(mensaje: String, maximo: Int): String {
     while (true) {
-        val id = pedirId()
-
-        if (buscarPosicionBIN(id) != -1L) {
-            println("Ya existe un videojuego con ID $id.")
-        } else {
-            return id
-        }
-    }
-}
-
-// Pide un texto hasta que no esté vacío y quepa en los bytes reservados del registro
-fun pedirTexto(mensaje: String, tamano: Int): String {
-    while (true) {
-        print("$mensaje (máximo $tamano caracteres): ")
+        print("$mensaje (máximo $maximo caracteres): ")
         val texto = readlnOrNull()?.trim()
 
-        if (texto.isNullOrBlank()) {
-            println("El campo no puede estar vacío.")
-        } else if (!textoValido(texto, tamano)) {
-            println("El texto es demasiado largo o contiene caracteres no permitidos.")
-        } else {
-            return texto
-        }
-    }
-}
+        if (!texto.isNullOrEmpty() && texto.length <= maximo) return texto
 
-// Pide el año hasta que sea un número entero
-fun pedirAnio(): Int {
-    while (true) {
-        print("Introduce el año: ")
-        val anio = readlnOrNull()?.toIntOrNull()
-
-        if (anio != null) return anio
-
-        println("El año debe ser un número entero.")
+        println("El texto no puede estar vacío ni superar $maximo caracteres.")
     }
 }
 
@@ -209,8 +130,7 @@ fun pedirAnio(): Int {
 fun pedirNota(mensaje: String): Double {
     while (true) {
         print(mensaje)
-        // Cambiamos la coma por un punto para aceptar notas como 8,5
-        val nota = readlnOrNull()?.replace(',', '.')?.toDoubleOrNull()
+        val nota = readlnOrNull()?.toDoubleOrNull()
 
         if (nota != null && nota >= 0.0 && nota <= 10.0) return nota
 
@@ -235,8 +155,6 @@ fun importarABIN(rutaOrigen: Path) {
     try {
         Files.createDirectories(rutaBIN.parent)
 
-        var importados = 0
-
         // Abrimos el canal vaciando el fichero si existe o creándolo si no existe
         FileChannel.open(
             rutaBIN,
@@ -245,22 +163,10 @@ fun importarABIN(rutaOrigen: Path) {
             StandardOpenOption.TRUNCATE_EXISTING
         ).use { canal ->
             for (videojuego in videojuegos) {
-                // Solo escribimos los registros cuyos textos caben en el tamaño fijo
-                if (textoValido(videojuego.titulo, TAMANO_TITULO) &&
-                    textoValido(videojuego.genero, TAMANO_GENERO)
-                ) {
-                    val buffer = registroABuffer(videojuego)
-                    while (buffer.hasRemaining()) {
-                        canal.write(buffer)
-                    }
-                    importados++
-                } else {
-                    println("Videojuego ignorado (título o género no válidos): ${videojuego.titulo}")
-                }
+                escribirRegistro(canal, videojuego)
             }
         }
-
-        println("--- Videojuegos importados al fichero binario: $importados")
+        println("--- Videojuegos importados al fichero binario: ${videojuegos.size}")
 
     } catch (e: Exception) {
         println("Error al importar al fichero binario: ${e.message}")
@@ -268,11 +174,6 @@ fun importarABIN(rutaOrigen: Path) {
 }
 
 fun mostrarRegistrosBIN() {
-    if (Files.notExists(rutaBIN)) {
-        println("El fichero binario todavía no existe. Impórtalo o añade un registro.")
-        return
-    }
-
     try {
         println("--- Información leída secuencialmente del fichero binario: ---")
         listarVideojuegos(leerRegistrosBIN())
@@ -283,14 +184,17 @@ fun mostrarRegistrosBIN() {
 
 fun añadirRegistroBIN() {
     try {
-        // Pedimos los datos validando cada uno hasta que sea correcto
-        val id = pedirIdNuevo()
+        // Pedimos el ID hasta que sea un número que no exista ya en el fichero
+        var id = pedirEntero("Introduce el ID: ")
+        while (leerRegistrosBIN().any { it.id == id }) {
+            println("Ya existe un videojuego con ID $id.")
+            id = pedirEntero("Introduce el ID: ")
+        }
+
         val titulo = pedirTexto("Introduce el título", TAMANO_TITULO)
         val genero = pedirTexto("Introduce el género", TAMANO_GENERO)
-        val anio = pedirAnio()
+        val anio = pedirEntero("Introduce el año: ")
         val nota = pedirNota("Introduce la nota (0.0 - 10.0): ")
-
-        val videojuego = Videojuego(id, titulo, genero, anio, nota)
 
         Files.createDirectories(rutaBIN.parent)
 
@@ -301,12 +205,8 @@ fun añadirRegistroBIN() {
             StandardOpenOption.CREATE,
             StandardOpenOption.APPEND
         ).use { canal ->
-            val buffer = registroABuffer(videojuego)
-            while (buffer.hasRemaining()) {
-                canal.write(buffer)
-            }
+            escribirRegistro(canal, Videojuego(id, titulo, genero, anio, nota))
         }
-
         println("Videojuego añadido con ID: $id")
 
     } catch (e: Exception) {
@@ -315,30 +215,26 @@ fun añadirRegistroBIN() {
 }
 
 fun modificarRegistroBIN() {
-    if (Files.notExists(rutaBIN)) {
-        println("El fichero binario todavía no existe. Impórtalo o añade un registro.")
-        return
-    }
-
     try {
-        val id = pedirId()
-
         // Recorremos el fichero para ver si existe el ID
-        val posicion = buscarPosicionBIN(id)
+        val lista = leerRegistrosBIN()
+        val id = pedirEntero("Introduce el ID: ")
+        val videojuego = lista.firstOrNull { it.id == id }
 
-        if (posicion == -1L) {
+        if (videojuego == null) {
             println("No existe un videojuego con ID $id.")
             return
         }
 
-        val videojuego = leerRegistroEn(posicion)
         println("Videojuego encontrado: ${videojuego.titulo}")
-
         val nuevaNota = pedirNota("Introduce la nueva nota (0.0 - 10.0): ")
 
         FileChannel.open(rutaBIN, StandardOpenOption.WRITE).use { canal ->
-            // Nos situamos exactamente sobre el campo nota del registro
-            canal.position(posicion + TAMANO_ID + TAMANO_TITULO + TAMANO_GENERO + TAMANO_ANIO)
+            // Posición del registro = posición en la lista × tamaño del registro
+            val inicioRegistro = lista.indexOf(videojuego).toLong() * TAMANO_REGISTRO
+
+            // Nos situamos en el canal exactamente sobre el campo nota
+            canal.position(inicioRegistro + TAMANO_ID + TAMANO_TITULO + TAMANO_GENERO + TAMANO_ANIO)
 
             val buffer = ByteBuffer.allocate(TAMANO_NOTA)
             buffer.putDouble(nuevaNota)
@@ -348,7 +244,6 @@ fun modificarRegistroBIN() {
                 canal.write(buffer)
             }
         }
-
         println("Nota de ${videojuego.titulo} modificada a $nuevaNota.")
 
     } catch (e: Exception) {
@@ -357,57 +252,36 @@ fun modificarRegistroBIN() {
 }
 
 fun eliminarRegistroBIN() {
-    if (Files.notExists(rutaBIN)) {
-        println("El fichero binario todavía no existe. Impórtalo o añade un registro.")
-        return
-    }
-
     val pathTemporal = Path.of(rutaBIN.toString() + ".tmp")
 
     try {
-        val id = pedirId()
-
         // Recorremos el fichero para ver si existe el ID
-        val posicion = buscarPosicionBIN(id)
+        val lista = leerRegistrosBIN()
+        val id = pedirEntero("Introduce el ID: ")
+        val videojuego = lista.firstOrNull { it.id == id }
 
-        if (posicion == -1L) {
+        if (videojuego == null) {
             println("No existe un videojuego con ID $id.")
             return
         }
 
-        val videojuego = leerRegistroEn(posicion)
-
         // Pedimos confirmación antes de eliminarlo
         print("¿Seguro que quieres eliminar ${videojuego.titulo}? (s/n): ")
-        val confirmacion = readlnOrNull()
-
-        if (!confirmacion.equals("s", ignoreCase = true)) {
+        if (!readlnOrNull().equals("s", ignoreCase = true)) {
             println("Eliminación cancelada.")
             return
         }
 
-        // Copiamos al fichero temporal todos los registros menos el que se elimina
-        FileChannel.open(rutaBIN, StandardOpenOption.READ).use { canalLectura ->
-            FileChannel.open(
-                pathTemporal,
-                StandardOpenOption.WRITE,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.TRUNCATE_EXISTING
-            ).use { canalEscritura ->
-                val buffer = ByteBuffer.allocate(TAMANO_REGISTRO)
-
-                while (canalLectura.read(buffer) > 0) {
-                    buffer.flip()
-                    val idLeido = buffer.getInt()
-
-                    if (idLeido != id) {
-                        // Rebobinamos el puntero del buffer para escribir el registro completo original
-                        buffer.rewind()
-                        while (buffer.hasRemaining()) {
-                            canalEscritura.write(buffer)
-                        }
-                    }
-                    buffer.clear()
+        // Escribimos en el fichero temporal todos los registros menos el eliminado
+        FileChannel.open(
+            pathTemporal,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING
+        ).use { canal ->
+            for (juego in lista) {
+                if (juego.id != id) {
+                    escribirRegistro(canal, juego)
                 }
             }
         }

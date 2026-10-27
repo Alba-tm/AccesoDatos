@@ -56,8 +56,7 @@ fun añadirVideojuego(lista: MutableList<Videojuego>) {
     }
 
     print("Introduce la nota (0.0 - 10.0): ")
-    // Cambiamos la coma por un punto para aceptar notas como 8,5
-    val nota = readlnOrNull()?.replace(',', '.')?.toDoubleOrNull()
+    val nota = readlnOrNull()?.toDoubleOrNull()
 
     if (nota == null || nota < 0.0 || nota > 10.0) {
         println("La nota debe estar entre 0.0 y 10.0.")
@@ -138,16 +137,16 @@ fun integrarCatalogo(
     catalogo: MutableList<Videojuego>,
     importados: List<Videojuego>
 ): Int {
+    var nuevos = 0
 
-    // Guardamos los ID que ya existen en el catálogo
-    val idsExistentes = catalogo.map { it.id }.toSet()
+    for (videojuego in importados) {
+        // Solo añadimos el videojuego si su ID todavía no existe en el catálogo
+        if (catalogo.none { it.id == videojuego.id }) {
+            catalogo.add(videojuego)
+            nuevos++
+        }
+    }
 
-    // Nos quedamos solo con los videojuegos cuyo ID todavía no existe
-    val nuevos = importados
-        .filter { it.id !in idsExistentes }
-        .distinctBy { it.id }
-
-    // Añadimos los nuevos al catálogo y devolvemos cuántos son
-    catalogo.addAll(nuevos)
-    return nuevos.size
+    // Devolvemos cuántos videojuegos nuevos se han añadido
+    return nuevos
 }
